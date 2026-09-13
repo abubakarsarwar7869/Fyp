@@ -5,7 +5,7 @@ $options = get_option( 'speed_builder_options', array() );
 <div class="speed-builder-admin">
 	<header class="sb-admin-header">
 		<div class="sb-admin-brand"><img src="<?php echo esc_url( SPEED_BUILDER_URL . 'assets/images/speed-builder-mark.svg' ); ?>" alt="" /><span>speed<span>builder</span></span></div>
-		<nav><a href="<?php echo esc_url( admin_url( 'admin.php?page=speed-builder' ) ); ?>">Dashboard</a><a href="<?php echo esc_url( admin_url( 'admin.php?page=speed-builder-pages' ) ); ?>">Pages</a><a href="<?php echo esc_url( admin_url( 'admin.php?page=speed-builder-templates' ) ); ?>">Templates</a><a class="is-active" href="<?php echo esc_url( admin_url( 'admin.php?page=speed-builder-settings' ) ); ?>">Settings</a></nav>
+		<nav><a href="<?php echo esc_url( admin_url( 'admin.php?page=speed-builder' ) ); ?>">Dashboard</a><a href="<?php echo esc_url( admin_url( 'edit.php?post_type=page' ) ); ?>">WordPress Pages</a><a href="<?php echo esc_url( admin_url( 'edit.php' ) ); ?>">Posts</a><a href="<?php echo esc_url( admin_url( 'admin.php?page=speed-builder-templates' ) ); ?>">Templates</a><a class="is-active" href="<?php echo esc_url( admin_url( 'admin.php?page=speed-builder-settings' ) ); ?>">Settings</a></nav>
 		<div class="sb-header-meta"><a href="https://wordpress.org/support/" target="_blank" rel="noopener noreferrer">View documentation ↗</a><span>v<?php echo esc_html( SPEED_BUILDER_VERSION ); ?></span></div>
 	</header>
 	<main class="sb-admin-main sb-settings-main">

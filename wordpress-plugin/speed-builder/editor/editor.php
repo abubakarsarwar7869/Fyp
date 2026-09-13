@@ -2,11 +2,12 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 $post_id = isset( $_GET['post_id'] ) ? absint( $_GET['post_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 $post    = get_post( $post_id );
+$back_url = 'page' === $post->post_type ? admin_url( 'edit.php?post_type=page' ) : admin_url( 'edit.php' );
 ?>
 <div id="speed-builder-editor" class="speed-builder-editor" data-post-id="<?php echo esc_attr( $post_id ); ?>">
 	<div class="sb-editor-loading" id="sb-editor-loading"><img src="<?php echo esc_url( SPEED_BUILDER_URL . 'assets/images/speed-builder-mark.svg' ); ?>" alt="Speed Builder" /><b>speed<span>builder</span></b><p>Loading editor…</p></div>
 	<header class="sb-editor-topbar">
-		<div class="sb-editor-project"><a class="sb-editor-back" href="<?php echo esc_url( admin_url( 'admin.php?page=speed-builder-pages' ) ); ?>" title="Back to WordPress pages">←</a><img src="<?php echo esc_url( SPEED_BUILDER_URL . 'assets/images/speed-builder-mark.svg' ); ?>" alt="" /><span class="sb-editor-wordmark">speed<span>builder</span></span><i></i><b><?php echo esc_html( $post->post_title ); ?></b></div>
+		<div class="sb-editor-project"><a class="sb-editor-back" href="<?php echo esc_url( $back_url ); ?>" title="Back to WordPress content">←</a><img src="<?php echo esc_url( SPEED_BUILDER_URL . 'assets/images/speed-builder-mark.svg' ); ?>" alt="" /><span class="sb-editor-wordmark">speed<span>builder</span></span><i></i><b><?php echo esc_html( $post->post_title ); ?></b></div>
 		<div class="sb-editor-devices" role="group" aria-label="Responsive preview"><button class="is-active" data-sb-device="desktop" title="Desktop preview">▱ <span>Desktop</span></button><button data-sb-device="tablet" title="Tablet preview">▯ <span>Tablet</span></button><button data-sb-device="mobile" title="Mobile preview">▯ <span>Mobile</span></button></div>
 		<div class="sb-editor-actions"><button data-sb-action="undo" title="Undo (Ctrl/Cmd + Z)">↶</button><button data-sb-action="redo" title="Redo (Ctrl/Cmd + Shift + Z)">↷</button><i></i><button data-sb-action="save-template" title="Save this page as a template">▦ <span>Template</span></button><button data-sb-action="preview" title="Preview page">◉ <span>Preview</span></button><button class="sb-save-button" data-sb-action="save">Save</button><button class="sb-publish-button" data-sb-action="publish">Publish ↗</button></div>
 	</header>

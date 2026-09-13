@@ -64,7 +64,7 @@ class Speed_Builder_REST_API {
 
 	public function can_edit_page( $request ) {
 		$post_id = absint( $request['id'] );
-		return $post_id && 'page' === get_post_type( $post_id ) && current_user_can( 'edit_post', $post_id );
+		return $post_id && in_array( get_post_type( $post_id ), array( 'page', 'post' ), true ) && current_user_can( 'edit_post', $post_id );
 	}
 
 	public function can_manage_templates() {

@@ -17,8 +17,8 @@ Speed Builder Phase 1 is a small, stable foundation for building WordPress pages
 == Phase 1 includes ==
 
 * Modern Speed Builder dashboard.
-* WordPress page management and direct editor links.
-* A full-screen visual editor with desktop, tablet, and mobile canvas modes.
+* Native WordPress Pages and Posts integration, including editor meta boxes and list actions.
+* A refined midnight-blue visual editor with desktop, tablet, and mobile canvas modes.
 * Section structures with one to four columns.
 * Heading, Text, Button, Image, Spacer, and Divider widgets.
 * Native WordPress Media Library selection.

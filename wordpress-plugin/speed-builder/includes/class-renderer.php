@@ -23,13 +23,13 @@ class Speed_Builder_Renderer {
 	}
 
 	/**
-	 * Replace normal page content only for Speed Builder enabled pages.
+	 * Replace normal WordPress content only for Speed Builder enabled Pages and Posts.
 	 *
 	 * @param string $content Default page content.
 	 * @return string
 	 */
 	public function render_page_content( $content ) {
-		if ( is_admin() || ! is_singular( 'page' ) || ! in_the_loop() || ! is_main_query() ) {
+		if ( is_admin() || ! is_singular( array( 'page', 'post' ) ) || ! in_the_loop() || ! is_main_query() ) {
 			return $content;
 		}
 		$post_id = get_the_ID();

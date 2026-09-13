@@ -1,6 +1,6 @@
 <?php
 /**
- * WordPress admin menus and page actions.
+ * WordPress admin integration, menus, native post actions, and template actions.
  *
  * @package SpeedBuilder
  */
@@ -10,9 +10,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Speed_Builder_Admin {
+	/** @var array<int,string> */
+	private $supported_post_types = array( 'page', 'post' );
+
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
-		add_action( 'admin_post_speed_builder_create_page', array( $this, 'create_page' ) );
+		add_action( 'add_meta_boxes', array( $this, 'register_builder_meta_box' ), 10, 2 );
+		add_filter( 'page_row_actions', array( $this, 'add_builder_row_action' ), 10, 2 );
+		add_filter( 'post_row_actions', array( $this, 'add_builder_row_action' ), 10, 2 );
 		add_action( 'admin_post_speed_builder_insert_template', array( $this, 'insert_template' ) );
 	}
 
@@ -28,39 +33,72 @@ class Speed_Builder_Admin {
 			58
 		);
 		add_submenu_page( 'speed-builder', __( 'Dashboard', 'speed-builder' ), __( 'Dashboard', 'speed-builder' ), $capability, 'speed-builder', array( $this, 'render_dashboard' ) );
-		add_submenu_page( 'speed-builder', __( 'Pages', 'speed-builder' ), __( 'Pages', 'speed-builder' ), $capability, 'speed-builder-pages', array( $this, 'render_pages' ) );
 		add_submenu_page( 'speed-builder', __( 'Templates', 'speed-builder' ), __( 'Templates', 'speed-builder' ), $capability, 'speed-builder-templates', array( $this, 'render_templates' ) );
 		add_submenu_page( 'speed-builder', __( 'Settings', 'speed-builder' ), __( 'Settings', 'speed-builder' ), 'manage_options', 'speed-builder-settings', array( $this, 'render_settings' ) );
-		add_submenu_page( null, __( 'Speed Builder Editor', 'speed-builder' ), __( 'Speed Builder Editor', 'speed-builder' ), $capability, 'speed-builder-editor', array( $this, 'render_editor' ) );
+		add_submenu_page( null, __( 'Speed Builder Editor', 'speed-builder' ), __( 'Speed Builder Editor', 'speed-builder' ), 'edit_posts', 'speed-builder-editor', array( $this, 'render_editor' ) );
 	}
 
-	public function render_dashboard() {
-		$this->render_view( 'dashboard' );
+	public function render_dashboard() { $this->render_view( 'dashboard' ); }
+	public function render_templates() { $this->render_view( 'templates' ); }
+	public function render_settings() { $this->render_view( 'settings' ); }
+
+	/**
+	 * Adds a WordPress-native launch point to Pages and Posts.
+	 *
+	 * @param string  $post_type Registered post type.
+	 * @param WP_Post $post Current post.
+	 */
+	public function register_builder_meta_box( $post_type, $post ) {
+		if ( ! in_array( $post_type, $this->supported_post_types, true ) || ! current_user_can( 'edit_post', $post->ID ) ) {
+			return;
+		}
+		add_meta_box(
+			'speed-builder-launch',
+			__( 'Speed Builder', 'speed-builder' ),
+			array( $this, 'render_builder_meta_box' ),
+			$post_type,
+			'side',
+			'high'
+		);
 	}
 
-	public function render_pages() {
-		$this->render_view( 'pages' );
+	/** @param WP_Post $post */
+	public function render_builder_meta_box( $post ) {
+		$enabled    = (bool) get_post_meta( $post->ID, '_speed_builder_enabled', true );
+		$editor_url = $this->get_editor_url( $post->ID );
+		?>
+		<div class="sb-native-launch">
+			<div class="sb-native-launch-mark"><img src="<?php echo esc_url( SPEED_BUILDER_URL . 'assets/images/speed-builder-mark.svg' ); ?>" alt="" /></div>
+			<div class="sb-native-launch-copy"><strong><?php esc_html_e( 'Build this content visually', 'speed-builder' ); ?></strong><span><?php echo $enabled ? esc_html__( 'This item is using Speed Builder.', 'speed-builder' ) : esc_html__( 'Open the focused visual editor for this page or post.', 'speed-builder' ); ?></span></div>
+			<a class="button button-primary sb-native-launch-button" href="<?php echo esc_url( $editor_url ); ?>"><?php echo $enabled ? esc_html__( 'Edit with Speed Builder', 'speed-builder' ) : esc_html__( 'Open Speed Builder', 'speed-builder' ); ?> <span>→</span></a>
+			<p><?php esc_html_e( 'Your regular WordPress title, status, permalink, and revisions remain intact.', 'speed-builder' ); ?></p>
+		</div>
+		<?php
 	}
 
-	public function render_templates() {
-		$this->render_view( 'templates' );
-	}
-
-	public function render_settings() {
-		$this->render_view( 'settings' );
+	/**
+	 * @param array<string,string> $actions Existing row actions.
+	 * @param WP_Post              $post Post object.
+	 * @return array<string,string>
+	 */
+	public function add_builder_row_action( $actions, $post ) {
+		if ( ! in_array( $post->post_type, $this->supported_post_types, true ) || ! current_user_can( 'edit_post', $post->ID ) ) {
+			return $actions;
+		}
+		$label = get_post_meta( $post->ID, '_speed_builder_enabled', true ) ? __( 'Edit with Speed Builder', 'speed-builder' ) : __( 'Open Speed Builder', 'speed-builder' );
+		$actions['speed_builder'] = '<a href="' . esc_url( $this->get_editor_url( $post->ID ) ) . '" class="speed-builder-row-action">' . esc_html( $label ) . '</a>';
+		return $actions;
 	}
 
 	public function render_editor() {
 		$post_id = isset( $_GET['post_id'] ) ? absint( $_GET['post_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! $post_id || 'page' !== get_post_type( $post_id ) || ! current_user_can( 'edit_post', $post_id ) ) {
-			wp_die( esc_html__( 'You do not have permission to edit this page with Speed Builder.', 'speed-builder' ) );
+		if ( ! $post_id || ! in_array( get_post_type( $post_id ), $this->supported_post_types, true ) || ! current_user_can( 'edit_post', $post_id ) ) {
+			wp_die( esc_html__( 'You do not have permission to edit this content with Speed Builder.', 'speed-builder' ) );
 		}
 		include SPEED_BUILDER_PATH . 'editor/editor.php';
 	}
 
-	/**
-	 * @param string $view View filename without .php.
-	 */
+	/** @param string $view View filename without .php. */
 	private function render_view( $view ) {
 		if ( ! current_user_can( 'edit_pages' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access Speed Builder.', 'speed-builder' ) );
@@ -68,35 +106,12 @@ class Speed_Builder_Admin {
 		include SPEED_BUILDER_PATH . 'admin/views/' . $view . '.php';
 	}
 
-	public function create_page() {
-		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_die( esc_html__( 'You do not have permission to create pages.', 'speed-builder' ) );
-		}
-		check_admin_referer( 'speed_builder_create_page' );
-
-		$title = isset( $_POST['speed_builder_page_title'] ) ? sanitize_text_field( wp_unslash( $_POST['speed_builder_page_title'] ) ) : __( 'Untitled Page', 'speed-builder' );
-		if ( '' === $title ) {
-			$title = __( 'Untitled Page', 'speed-builder' );
-		}
-
-		$post_id = wp_insert_post(
-			array(
-				'post_type'   => 'page',
-				'post_title'  => $title,
-				'post_status' => 'draft',
-			),
-			true
-		);
-
-		if ( is_wp_error( $post_id ) ) {
-			wp_safe_redirect( admin_url( 'admin.php?page=speed-builder-pages&speed_builder_error=create' ) );
-			exit;
-		}
-
-		update_post_meta( $post_id, '_speed_builder_enabled', '1' );
-		update_post_meta( $post_id, '_speed_builder_data', wp_json_encode( speed_builder()->empty_document() ) );
-		wp_safe_redirect( admin_url( 'admin.php?page=speed-builder-editor&post_id=' . absint( $post_id ) ) );
-		exit;
+	/**
+	 * @param int $post_id Post ID.
+	 * @return string
+	 */
+	private function get_editor_url( $post_id ) {
+		return admin_url( 'admin.php?page=speed-builder-editor&post_id=' . absint( $post_id ) );
 	}
 
 	public function insert_template() {
@@ -106,17 +121,17 @@ class Speed_Builder_Admin {
 		check_admin_referer( 'speed_builder_insert_template' );
 
 		$template_id = isset( $_POST['template_id'] ) ? sanitize_key( wp_unslash( $_POST['template_id'] ) ) : '';
-		$page_id     = isset( $_POST['page_id'] ) ? absint( $_POST['page_id'] ) : 0;
+		$post_id     = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 		$templates   = get_option( 'speed_builder_templates', array() );
 
-		if ( ! $page_id || ! current_user_can( 'edit_post', $page_id ) || empty( $templates[ $template_id ]['document'] ) ) {
+		if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) || empty( $templates[ $template_id ]['document'] ) ) {
 			wp_safe_redirect( admin_url( 'admin.php?page=speed-builder-templates&speed_builder_error=insert' ) );
 			exit;
 		}
 
-		update_post_meta( $page_id, '_speed_builder_enabled', '1' );
-		update_post_meta( $page_id, '_speed_builder_data', wp_json_encode( $templates[ $template_id ]['document'] ) );
-		wp_safe_redirect( admin_url( 'admin.php?page=speed-builder-editor&post_id=' . $page_id ) );
+		update_post_meta( $post_id, '_speed_builder_enabled', '1' );
+		update_post_meta( $post_id, '_speed_builder_data', wp_json_encode( $templates[ $template_id ]['document'] ) );
+		wp_safe_redirect( $this->get_editor_url( $post_id ) );
 		exit;
 	}
 }

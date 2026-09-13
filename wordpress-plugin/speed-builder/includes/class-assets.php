@@ -19,9 +19,11 @@ class Speed_Builder_Assets {
 	 * @param string $hook Current WordPress admin hook.
 	 */
 	public function enqueue_admin_assets( $hook ) {
-		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$page   = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$screen = get_current_screen();
+		$is_native_editor = in_array( $hook, array( 'post.php', 'post-new.php' ), true ) && $screen && in_array( $screen->post_type, array( 'page', 'post' ), true );
 
-		if ( 0 !== strpos( $page, 'speed-builder' ) ) {
+		if ( 0 !== strpos( $page, 'speed-builder' ) && ! $is_native_editor ) {
 			return;
 		}
 
@@ -68,7 +70,7 @@ class Speed_Builder_Assets {
 
 		$post_id     = get_queried_object_id();
 		$conditional = (bool) Speed_Builder_Settings::get_option( 'conditional_css', 1 );
-		if ( $conditional && ( ! is_singular( 'page' ) || ! $post_id || ! get_post_meta( $post_id, '_speed_builder_enabled', true ) ) ) {
+		if ( $conditional && ( ! is_singular( array( 'page', 'post' ) ) || ! $post_id || ! get_post_meta( $post_id, '_speed_builder_enabled', true ) ) ) {
 			return;
 		}
 
